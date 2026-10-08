@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "AarogyaSetu Pune - Integrated Rural Healthcare Platform",
+  "short_name": "AarogyaSetu",
+  "description": "Public healthcare triage, smart facility matching, digital referrals, and follow-up tracking for rural Maharashtra.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

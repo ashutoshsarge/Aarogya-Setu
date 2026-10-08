@@ -1,0 +1,6 @@
+{
+  "name": "AarogyaSetu Pune - Integrated Rural Healthcare Platform",
+  "description": "Public healthcare triage, smart facility matching, digital referrals, and follow-up tracking for rural Maharashtra (SPPU CEP Project).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
