@@ -55,6 +55,22 @@ import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { GlobalSearchModal } from './components/shared/GlobalSearchModal';
 import { NotificationDrawer } from './components/shared/NotificationDrawer';
 import { OfflineBanner } from './components/OfflineBanner';
+import { BackendStatusModal } from './components/BackendStatusModal';
+import {
+  fetchPatients,
+  savePatient,
+  fetchReferrals,
+  saveReferral,
+  updateReferralInDb,
+  fetchHospitals,
+  fetchMchRecords,
+  updateMchRecordInDb,
+  fetchChronicRecords,
+  updateChronicRecordInDb,
+  fetchAuditLogs,
+  recordAuditLog,
+  subscribeToReferralUpdates,
+} from './services/backendService';
 
 export default function App() {
   const [language, setLanguage] = useState<Language>('en');
@@ -123,6 +139,7 @@ export default function App() {
     hospital: Hospital;
     specialty: string;
   } | null>(null);
+  const [isBackendModalOpen, setIsBackendModalOpen] = useState(false);
 
   // Listen for online/offline events & localStorage cross-tab updates
   useEffect(() => {
@@ -199,6 +216,54 @@ export default function App() {
     }
   }, [currentUser]);
 
+  // Fetch live Supabase data on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadBackendData() {
+      try {
+        const [pat, ref, hosp, mch, chron, aud] = await Promise.all([
+          fetchPatients(),
+          fetchReferrals(),
+          fetchHospitals(),
+          fetchMchRecords(),
+          fetchChronicRecords(),
+          fetchAuditLogs(),
+        ]);
+        if (isMounted) {
+          if (pat && pat.length > 0) setPatients(pat);
+          if (ref && ref.length > 0) setReferrals(ref);
+          if (hosp && hosp.length > 0) setHospitals(hosp);
+          if (mch && mch.length > 0) setMchRecords(mch);
+          if (chron && chron.length > 0) setChronicRecords(chron);
+          if (aud && aud.length > 0) setAuditLogs(aud);
+        }
+      } catch (err) {
+        console.warn('Initial data load from backend completed with local fallback:', err);
+      }
+    }
+    loadBackendData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Real-time collaborative subscription to referral updates across clinics & hospitals
+  useEffect(() => {
+    const unsubscribe = subscribeToReferralUpdates((updatedReferral) => {
+      setReferrals((prev) => {
+        const exists = prev.some((r) => r.id === updatedReferral.id);
+        if (exists) {
+          return prev.map((r) => (r.id === updatedReferral.id ? updatedReferral : r));
+        } else {
+          return [updatedReferral, ...prev];
+        }
+      });
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const addAuditLog = (action: string, resource: string, details: string) => {
     const newLog: AuditLog = {
       id: `aud_${Date.now()}`,
@@ -210,6 +275,7 @@ export default function App() {
       details,
     };
     setAuditLogs((prev) => [newLog, ...prev]);
+    recordAuditLog(newLog).catch(() => {});
   };
 
   // Auth Handlers
@@ -234,11 +300,13 @@ export default function App() {
   const handleRegisterPatient = (newPatient: Patient) => {
     setPatients([newPatient, ...patients]);
     setIsRegisterOpen(false);
+    savePatient(newPatient).catch(() => {});
     addAuditLog('PATIENT_REGISTER', `Health ID: ${newPatient.healthId}`, `Registered patient ${newPatient.name}`);
   };
 
   const handleCreateReferral = (newReferral: Referral) => {
     setReferrals([newReferral, ...referrals]);
+    saveReferral(newReferral).catch(() => {});
     addAuditLog(
       'REFERRAL_CREATED',
       `Voucher: ${newReferral.referralNumber}`,
@@ -294,6 +362,16 @@ export default function App() {
       })
     );
 
+    updateReferralInDb(referralId, {
+      status: newStatus,
+      doctorNotes: notes,
+      treatingDoctorName: doctorName,
+      prescriptions,
+      reachedAt: newStatus === 'REACHED' ? new Date().toISOString() : undefined,
+      underTreatmentAt: newStatus === 'UNDER_TREATMENT' ? new Date().toISOString() : undefined,
+      completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : undefined,
+    }).catch(() => {});
+
     addAuditLog('STATUS_TRANSITION', `Referral: ${referralId}`, `Status changed to ${newStatus}`);
   };
 
@@ -322,6 +400,11 @@ export default function App() {
         };
       })
     );
+    updateReferralInDb(referralId, {
+      followUpStatus: status,
+      followUpChecklist: checklist,
+    }).catch(() => {});
+
     addAuditLog('FOLLOW_UP_VERIFIED', `Referral: ${referralId}`, `ASHA home visit verified; status: ${status}`);
   };
 
@@ -329,11 +412,13 @@ export default function App() {
     setChronicRecords((prev) =>
       prev.map((rec) => {
         if (rec.id !== recordId) return rec;
-        return {
+        const updated = {
           ...rec,
-          status: 'UP_TO_DATE',
+          status: 'UP_TO_DATE' as const,
           nextRefillDate: '2026-11-04',
         };
+        updateChronicRecordInDb(updated).catch(() => {});
+        return updated;
       })
     );
     addAuditLog('NCD_REFILL_DISPENSED', `Record: ${recordId}`, 'Chronic medicine refill dispensed');
@@ -354,7 +439,9 @@ export default function App() {
             weightKg: 62,
           };
         });
-        return { ...mch, ancVisits: updatedVisits };
+        const updatedMch = { ...mch, ancVisits: updatedVisits };
+        updateMchRecordInDb(updatedMch).catch(() => {});
+        return updatedMch;
       })
     );
     addAuditLog('ANC_VISIT_LOGGED', `MCH: ${recordId}`, `ANC visit #${visitNumber} recorded as completed`);
@@ -368,6 +455,7 @@ export default function App() {
         return { ...r, feedback };
       })
     );
+    updateReferralInDb(feedbackReferral.id, { feedback }).catch(() => {});
     setFeedbackReferral(null);
     addAuditLog('FEEDBACK_SUBMITTED', `Referral: ${feedbackReferral.id}`, `Patient rated ${feedback.rating} stars`);
   };
@@ -436,6 +524,7 @@ export default function App() {
         onChangeLanguage={(lang) => setLanguage(lang)}
         onOpenQrScanner={() => setIsQrScannerOpen(true)}
         isOffline={isOffline}
+        onOpenBackendStatus={() => setIsBackendModalOpen(true)}
       />
 
       {/* Main Glassmorphic View Area */}
@@ -746,6 +835,13 @@ export default function App() {
         isOffline={isOffline}
         onToggleOfflineSimulation={handleToggleOfflineSimulation}
         isSimulated={isSimulatedOffline}
+        language={language}
+      />
+
+      {/* Backend Health & Supabase Cloud Management Modal */}
+      <BackendStatusModal
+        isOpen={isBackendModalOpen}
+        onClose={() => setIsBackendModalOpen(false)}
         language={language}
       />
     </div>

@@ -177,13 +177,13 @@ export const PatientPortalView: React.FC<PatientPortalViewProps> = ({
               <div className="text-xs text-teal-100/90 flex flex-wrap items-center gap-2 mt-1">
                 <span>
                   {patient.age} {language === 'mr' ? 'वर्षे' : language === 'hi' ? 'वर्ष' : 'Yrs'} ·{' '}
-                  {patient.gender === 'MALE'
+                  {(patient.gender as string).toUpperCase() === 'MALE'
                     ? language === 'mr'
                       ? 'पुरुष'
                       : language === 'hi'
                       ? 'पुरुष'
                       : 'Male'
-                    : patient.gender === 'FEMALE'
+                    : (patient.gender as string).toUpperCase() === 'FEMALE'
                     ? language === 'mr'
                       ? 'महिला'
                       : language === 'hi'
@@ -544,12 +544,12 @@ export const PatientPortalView: React.FC<PatientPortalViewProps> = ({
                     : language === 'hi'
                     ? 'उपचार जारी'
                     : 'UNDER TREATMENT'
-                  : activeReferral.status === 'INITIATED'
+                  : (activeReferral.status as string) === 'INITIATED' || activeReferral.status === 'REFERRED'
                   ? language === 'mr'
-                    ? 'सुरू केले'
+                    ? 'नोंदणीकृत / रेफरल'
                     : language === 'hi'
-                    ? 'शुरू किया'
-                    : 'INITIATED'
+                    ? 'रेफर किया गया'
+                    : 'REFERRED'
                   : activeReferral.status}
               </span>
 

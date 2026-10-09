@@ -614,13 +614,13 @@ export const HealthWorkerDashboard: React.FC<HealthWorkerDashboardProps> = ({
                       </td>
                       <td className="py-2.5 text-slate-600">
                         {p.age} {language === 'mr' ? 'वर्षे' : language === 'hi' ? 'वर्ष' : 'y'} ·{' '}
-                        {p.gender === 'MALE'
+                        {(p.gender as string).toUpperCase() === 'MALE'
                           ? language === 'mr'
                             ? 'पुरुष'
                             : language === 'hi'
                             ? 'पुरुष'
                             : 'Male'
-                          : p.gender === 'FEMALE'
+                          : (p.gender as string).toUpperCase() === 'FEMALE'
                           ? language === 'mr'
                             ? 'महिला'
                             : language === 'hi'

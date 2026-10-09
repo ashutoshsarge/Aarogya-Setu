@@ -377,13 +377,13 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                   <div className="text-xs text-teal-100 flex items-center gap-2 mt-0.5">
                     <span>
                       {patient.age} {language === 'mr' ? 'वर्षे' : language === 'hi' ? 'वर्ष' : 'Yrs'} ·{' '}
-                      {patient.gender === 'MALE'
+                      {(patient.gender as string).toUpperCase() === 'MALE'
                         ? language === 'mr'
                           ? 'पुरुष'
                           : language === 'hi'
                           ? 'पुरुष'
                           : 'Male'
-                        : patient.gender === 'FEMALE'
+                        : (patient.gender as string).toUpperCase() === 'FEMALE'
                         ? language === 'mr'
                           ? 'महिला'
                           : language === 'hi'

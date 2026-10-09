@@ -24,6 +24,7 @@ import {
   Radio,
   FileText,
   Calendar,
+  Database,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -46,6 +47,7 @@ interface NavbarProps {
   onChangeLanguage: (lang: Language) => void;
   onOpenQrScanner: () => void;
   isOffline?: boolean;
+  onOpenBackendStatus?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -61,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onChangeLanguage,
   onOpenQrScanner,
   isOffline = false,
+  onOpenBackendStatus,
 }) => {
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
   const [isSwitchMenuOpen, setIsSwitchMenuOpen] = useState(false);
@@ -379,6 +382,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isOffline ? t.offline : t.synced}
             </span>
           </div>
+
+          {/* Backend Status Pill */}
+          {onOpenBackendStatus && (
+            <button
+              type="button"
+              onClick={onOpenBackendStatus}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-card border border-teal-200/80 hover:bg-teal-50 text-xs font-semibold text-teal-800 transition cursor-pointer shadow-2xs"
+              title="Supabase Backend Health & Database Setup"
+            >
+              <Database className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-[11px]">Backend</span>
+            </button>
+          )}
 
           {/* Language Switcher (EN / मराठी / हिंदी) */}
           <div className="flex items-center p-0.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs font-semibold shadow-2xs">

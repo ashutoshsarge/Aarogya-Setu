@@ -153,13 +153,13 @@ export const EmergencyRedFlagModal: React.FC<EmergencyRedFlagModalProps> = ({
               </span>
               <span className="font-semibold text-slate-800">
                 {patient.age}y ·{' '}
-                {patient.gender === 'MALE'
+                {(patient.gender as string).toUpperCase() === 'MALE'
                   ? language === 'mr'
                     ? 'पुरुष'
                     : language === 'hi'
                     ? 'पुरुष'
                     : 'Male'
-                  : patient.gender === 'FEMALE'
+                  : (patient.gender as string).toUpperCase() === 'FEMALE'
                   ? language === 'mr'
                     ? 'महिला'
                     : language === 'hi'

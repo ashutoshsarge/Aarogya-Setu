@@ -245,13 +245,13 @@ export const TeleconsultationModal: React.FC<TeleconsultationModalProps> = ({
               <div className="text-slate-400">
                 {session.patient.age}{' '}
                 {language === 'mr' ? 'वर्षे' : language === 'hi' ? 'वर्ष' : 'y'} ·{' '}
-                {session.patient.gender === 'MALE'
+                {(session.patient.gender as string).toUpperCase() === 'MALE'
                   ? language === 'mr'
                     ? 'पुरुष'
                     : language === 'hi'
                     ? 'पुरुष'
                     : 'Male'
-                  : session.patient.gender === 'FEMALE'
+                  : (session.patient.gender as string).toUpperCase() === 'FEMALE'
                   ? language === 'mr'
                     ? 'महिला'
                     : language === 'hi'

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserRole, Language } from '../../types';
 import { TRANSLATIONS } from '../../utils/translations';
 import { DEMO_PROFILES, ENABLE_DEMO_LOGIN, DemoUser } from '../../data/demoUsers';
+import { authenticateUser } from '../../services/backendService';
 import {
   Lock,
   Eye,
@@ -49,7 +50,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!identifier.trim()) {
@@ -73,31 +74,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
 
-    setTimeout(() => {
+    try {
+      const authResult = await authenticateUser(identifier, isOtpMode ? '123456' : password);
       setIsLoading(false);
 
-      if (password.length >= 6 || (isOtpMode && otpValue === '123456')) {
-        const userName =
-          selectedRole === 'patient'
-            ? 'Ramesh Patil'
-            : selectedRole === 'health_worker'
-            ? 'Sunita Jadhav (ASHA)'
-            : selectedRole === 'doctor'
-            ? 'Dr. Anil Kulkarni'
-            : 'District Health Officer, Pune';
-
+      if (authResult.user) {
+        const effectiveRole = authResult.user.role || selectedRole;
         onSuccessLogin({
-          id: `usr_${Date.now()}`,
-          name: userName,
-          role: selectedRole,
-          healthId: selectedRole === 'patient' ? 'HID-2026-0001' : undefined,
-          facility: selectedRole === 'health_worker' ? 'Velhe Sub-Centre' : selectedRole === 'doctor' ? 'Sassoon General Hospital' : undefined,
+          id: authResult.user.id,
+          name: authResult.user.name,
+          role: effectiveRole,
+          healthId: authResult.user.healthId,
+          facility: authResult.user.facility,
         });
       } else {
-        setErrorMessage('Invalid credentials. Password must be at least 6 characters.');
-        showToast('Authentication failed: Invalid password format');
+        setErrorMessage(authResult.error || 'Authentication failed. Please check credentials.');
+        showToast(authResult.error || 'Authentication failed');
       }
-    }, 600);
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err?.message || 'Authentication error');
+    }
   };
 
   const handleDemoInstantLogin = (demoProfile: DemoUser) => {

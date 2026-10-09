@@ -151,13 +151,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           <span>{pat.name}</span>
                           <span className="text-xs text-slate-500 font-normal">
                             ({pat.age} {language === 'mr' ? 'वर्षे' : language === 'hi' ? 'वर्ष' : 'y'},{' '}
-                            {pat.gender === 'MALE'
+                            {(pat.gender as string).toUpperCase() === 'MALE'
                               ? language === 'mr'
                                 ? 'पुरुष'
                                 : language === 'hi'
                                 ? 'पुरुष'
                                 : 'Male'
-                              : pat.gender === 'FEMALE'
+                              : (pat.gender as string).toUpperCase() === 'FEMALE'
                               ? language === 'mr'
                                 ? 'महिला'
                                 : language === 'hi'
@@ -248,12 +248,12 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                             : language === 'hi'
                             ? 'उपचार जारी'
                             : 'UNDER TREATMENT'
-                          : ref.status === 'INITIATED'
+                          : (ref.status as string) === 'INITIATED' || ref.status === 'REFERRED'
                           ? language === 'mr'
-                            ? 'सुरू केले'
+                            ? 'नोंदणीकृत / रेफरल'
                             : language === 'hi'
-                            ? 'शुरू किया'
-                            : 'INITIATED'
+                            ? 'रेफर किया गया'
+                            : 'REFERRED'
                           : ref.status}
                       </span>
                       <div className="text-[10px] text-slate-400 mt-1 font-mono">{ref.appointmentDate}</div>

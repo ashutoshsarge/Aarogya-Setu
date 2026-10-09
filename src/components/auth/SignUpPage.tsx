@@ -3,6 +3,7 @@ import { UserRole, Language } from '../../types';
 import { TRANSLATIONS } from '../../utils/translations';
 import { PasswordStrengthMeter } from './PasswordStrengthMeter';
 import { PUNE_TALUKAS } from '../../data/mockData';
+import { registerNewUser } from '../../services/backendService';
 import {
   User,
   Phone,
@@ -51,7 +52,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!fullName.trim()) {
@@ -88,20 +89,37 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-      const generatedId =
-        selectedRole === 'patient'
-          ? `HID-2026-${randomSuffix}`
-          : `ASHA-PUN-${randomSuffix}`;
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const generatedId =
+      selectedRole === 'patient'
+        ? `HID-2026-${randomSuffix}`
+        : `ASHA-PUN-${randomSuffix}`;
 
-      onSuccessRegistered({
-        name: fullName.trim(),
+    try {
+      const regResult = await registerNewUser({
+        fullName: fullName.trim(),
+        mobile: cleanMobile,
         role: selectedRole,
-        healthId: generatedId,
+        taluka,
+        village: villageName.trim(),
+        password,
+        generatedId,
       });
-    }, 800);
+
+      setIsLoading(false);
+      if (regResult.user) {
+        onSuccessRegistered({
+          name: regResult.user.name,
+          role: regResult.user.role,
+          healthId: regResult.user.healthId,
+        });
+      } else {
+        setErrorMessage(regResult.error || 'Registration failed.');
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err?.message || 'Registration error');
+    }
   };
 
   return (

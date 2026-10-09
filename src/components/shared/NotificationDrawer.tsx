@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Language } from '../../types';
+import { TRANSLATIONS } from '../../utils/translations';
 
 export interface AppNotification {
   id: string;
@@ -89,6 +90,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   onAction,
   language = 'en',
 }) => {
+  const t: Record<string, any> = (TRANSLATIONS as any)[language] || (TRANSLATIONS as any).en || {};
   const [items, setItems] = useState<AppNotification[]>(notifications);
   const [activeTab, setActiveTab] = useState<'all' | 'referral' | 'followup' | 'stock'>('all');
 
