@@ -3,11 +3,13 @@ import { UserRole, Language } from '../../types';
 import { TRANSLATIONS } from '../../utils/translations';
 import { DEMO_PROFILES, ENABLE_DEMO_LOGIN, DemoUser } from '../../data/demoUsers';
 import { authenticateUser } from '../../services/backendService';
+import { useAuth, EMAIL_REGEX } from '../../context/AuthContext';
 import {
   Lock,
   Eye,
   EyeOff,
   Phone,
+  Mail,
   ArrowRight,
   Sparkles,
   AlertCircle,
@@ -30,6 +32,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onNavigateForgotPassword,
 }) => {
   const t = TRANSLATIONS[language];
+  const { signIn } = useAuth();
 
   // Role selector: Patient, Health Worker, Doctor/Hospital, Admin
   const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
@@ -52,9 +55,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanId = identifier.trim();
 
-    if (!identifier.trim()) {
-      setErrorMessage('Please enter your registered email or 10-digit mobile number.');
+    if (!cleanId) {
+      setErrorMessage('Please enter your registered email address or mobile number.');
       showToast('Validation Error: Identification field cannot be empty');
       return;
     }
@@ -71,11 +75,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       return;
     }
 
+    // Client-side validations for email login
+    const isEmail = cleanId.includes('@');
+    if (isEmail && !EMAIL_REGEX.test(cleanId)) {
+      setErrorMessage('Please enter a valid email address (e.g. name@domain.com).');
+      showToast('Invalid email address format');
+      return;
+    }
+
+    if (!isOtpMode && password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      showToast('Password must be at least 8 characters');
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const authResult = await authenticateUser(identifier, isOtpMode ? '123456' : password);
+      if (!isOtpMode && isEmail) {
+        // Connect directly to Supabase Auth signIn
+        const res = await signIn(cleanId, password);
+        setIsLoading(false);
+
+        if (res.error) {
+          setErrorMessage(res.error);
+          showToast(res.error);
+          return;
+        }
+
+        if (res.data?.user) {
+          const u = res.data.user;
+          const metaRole = (u.user_metadata?.role as UserRole) || selectedRole;
+          onSuccessLogin({
+            id: u.id,
+            name: u.user_metadata?.full_name || u.user_metadata?.name || cleanId.split('@')[0],
+            role: metaRole,
+            healthId: u.user_metadata?.healthId || `HID-${u.id.slice(0, 6).toUpperCase()}`,
+            facility: u.user_metadata?.facility,
+          });
+          return;
+        }
+      }
+
+      // Fallback for mobile demo / phone number flow
+      const authResult = await authenticateUser(cleanId, isOtpMode ? '123456' : password);
       setIsLoading(false);
 
       if (authResult.user) {

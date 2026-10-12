@@ -1,13 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables with fallback to user's configured Supabase project
-export const SUPABASE_URL: string =
+const rawUrl: string =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
   'https://tvxzsdzowbrnpoeqyyft.supabase.co';
 
+// Ensure root project URL format without trailing rest/v1 or slashes
+export const SUPABASE_URL: string = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+
 export const SUPABASE_ANON_KEY: string =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
-  'sb_publishable_8PGaP8D2r8UDfcYRuAllYw_GnuNY5Fm';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2eHpzZHpvd2JybnBvZXF5eWZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0ODA5ODksImV4cCI6MjEwNzA1Njk4OX0.K_Z48VKBUhjcpRvuSgONlJGFMvhdJfwe9_59f7AEovs';
 
 export const SUPABASE_PROJECT_ID: string = 'tvxzsdzowbrnpoeqyyft';
 

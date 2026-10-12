@@ -433,6 +433,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
+          {/* User Account / Logout Button (Desktop) */}
+          {currentUser && (
+            <div className="hidden sm:flex items-center gap-2 pl-1 border-l border-slate-200">
+              <div className="hidden xl:flex flex-col text-right">
+                <span className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[120px]">
+                  {currentUser.name}
+                </span>
+                <span className="text-[10px] text-teal-700 capitalize font-medium">
+                  {getRoleDisplayName(currentUser.role)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 font-semibold text-xs border border-slate-200 hover:border-red-200 transition cursor-pointer shadow-2xs"
+                title={t.logout}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">{t.logout}</span>
+              </button>
+            </div>
+          )}
+
           {/* Mobile Menu Toggle Button */}
           <button
             type="button"

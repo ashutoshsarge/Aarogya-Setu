@@ -3,6 +3,7 @@ import { Language } from '../../types';
 import { TRANSLATIONS } from '../../utils/translations';
 import { OtpInput } from './OtpInput';
 import { PasswordStrengthMeter } from './PasswordStrengthMeter';
+import { useAuth, EMAIL_REGEX } from '../../context/AuthContext';
 import {
   Phone,
   Mail,
@@ -27,11 +28,13 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
   onNavigateLogin,
 }) => {
   const t = TRANSLATIONS[language];
+  const { resetPassword } = useAuth();
 
   // Clean 2-step flow: Step 1 (enter identifier) -> Step 2 (enter 6-digit OTP + new password + confirm) -> Success auto-redirect
   const [step, setStep] = useState<1 | 2>(1);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [redirectCount, setRedirectCount] = useState(4);
+  const [successMessage, setSuccessMessage] = useState('Password Reset Successfully!');
+  const [redirectCount, setRedirectCount] = useState(5);
 
   // Form Fields
   const [identifier, setIdentifier] = useState('');
@@ -70,16 +73,40 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
   }, [isSuccess, redirectCount, onNavigateLogin]);
 
   // Step 1: Send OTP / Reset Link
-  const handleStep1Submit = (e: React.FormEvent) => {
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier.trim()) {
-      setErrorMessage('Please enter your registered mobile number or email.');
+    const cleanId = identifier.trim();
+
+    if (!cleanId) {
+      setErrorMessage('Please enter your registered email address or mobile number.');
+      return;
+    }
+
+    const isEmail = cleanId.includes('@');
+    if (isEmail && !EMAIL_REGEX.test(cleanId)) {
+      setErrorMessage('Please enter a valid email address (e.g. name@domain.com).');
       return;
     }
 
     setIsLoading(true);
     setErrorMessage(null);
 
+    if (isEmail) {
+      // Connect to Supabase Auth resetPassword
+      const res = await resetPassword(cleanId);
+      setIsLoading(false);
+
+      if (res.error) {
+        setErrorMessage(res.error);
+        return;
+      }
+
+      setSuccessMessage('Password Reset Email Sent!');
+      setIsSuccess(true);
+      return;
+    }
+
+    // Mobile OTP demo flow
     setTimeout(() => {
       setIsLoading(false);
       setResendTimer(30);
@@ -340,10 +367,12 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
 
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-slate-900">
-              Password Reset Successfully!
+              {successMessage}
             </h3>
             <p className="text-xs text-slate-600 max-w-sm mx-auto">
-              Your password has been securely updated. You can now access your health account with your new credentials.
+              {identifier.includes('@')
+                ? `A password recovery link has been dispatched to ${identifier}. Please follow the link in your email to choose a new password.`
+                : 'Your password has been securely updated. You can now access your health account with your new credentials.'}
             </p>
           </div>
 

@@ -56,6 +56,7 @@ import { GlobalSearchModal } from './components/shared/GlobalSearchModal';
 import { NotificationDrawer } from './components/shared/NotificationDrawer';
 import { OfflineBanner } from './components/OfflineBanner';
 import { BackendStatusModal } from './components/BackendStatusModal';
+import { useAuth } from './context/AuthContext';
 import {
   fetchPatients,
   savePatient,
@@ -92,6 +93,9 @@ export default function App() {
     return false;
   });
 
+  // Supabase Authentication Layer
+  const { user: authUser, loading: authLoading, signOut } = useAuth();
+
   // Authentication State
   const [currentUser, setCurrentUser] = useState<{
     id: string;
@@ -102,9 +106,30 @@ export default function App() {
     isDemo?: boolean;
   } | null>(() => {
     const saved = localStorage.getItem('aarogya_auth_user');
-    // Default to null or saved user. For seamless first experience if no saved user:
+    // Default to null or saved user
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Synchronize Supabase auth user with currentUser
+  useEffect(() => {
+    if (authUser) {
+      const meta = authUser.user_metadata || {};
+      const role = (meta.role as UserRole) || 'patient';
+      const name = meta.full_name || meta.name || authUser.email?.split('@')[0] || 'User';
+      const healthId = meta.healthId || `HID-${authUser.id.slice(0, 6).toUpperCase()}`;
+      const facility = meta.facility;
+      setCurrentUser({
+        id: authUser.id,
+        name,
+        role,
+        healthId,
+        facility,
+        isDemo: false,
+      });
+    } else if (!authUser && currentUser && !currentUser.isDemo) {
+      setCurrentUser(null);
+    }
+  }, [authUser]);
 
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot'>('login');
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
@@ -290,8 +315,13 @@ export default function App() {
     addAuditLog('USER_LOGIN', `User: ${user.name}`, `Signed in successfully as ${user.role} (Demo: ${isDemo})`);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     addAuditLog('USER_LOGOUT', `User: ${currentUser?.name}`, 'Signed out from session');
+    try {
+      await signOut();
+    } catch (err) {
+      console.warn('Sign out error:', err);
+    }
     setCurrentUser(null);
     setAuthView('login');
   };
@@ -461,6 +491,18 @@ export default function App() {
   };
 
   const activePatientForPortal = patients[0] || INITIAL_PATIENTS[0];
+
+  // Restoring session loading state
+  if (authLoading && !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-teal-600/30 border-t-teal-600 rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-slate-500">Restoring secure session...</p>
+        </div>
+      </div>
+    );
+  }
 
   // IF NOT AUTHENTICATED: RENDER SPLIT-SCREEN AUTHENTICATION FLOW
   if (!currentUser) {

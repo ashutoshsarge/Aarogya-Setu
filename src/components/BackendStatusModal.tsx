@@ -216,13 +216,16 @@ export const BackendStatusModal: React.FC<BackendStatusModalProps> = ({
               </a>
             </li>
             <li>
-              Open the generated migration file:{' '}
+              Open the migration files:
+              <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-teal-300 ml-1">
+                supabase/auth_profiles.sql
+              </span>{' '}
+              and{' '}
               <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-teal-300">
                 supabase/schema.sql
-              </span>{' '}
-              in your editor.
+              </span>.
             </li>
-            <li>Copy and paste all SQL into the SQL Editor and click <strong>Run</strong>.</li>
+            <li>Copy and paste the SQL into the Supabase SQL Editor and click <strong>Run</strong>.</li>
             <li>
               Click <strong>Test Connection</strong> above to verify all tables and seed data are active!
             </li>
